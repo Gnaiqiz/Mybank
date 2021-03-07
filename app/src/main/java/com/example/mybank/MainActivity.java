@@ -1,0 +1,90 @@
+package com.example.mybank;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.concurrent.Executor;
+
+public class MainActivity extends AppCompatActivity {
+
+    //UI Views
+    private TextView authStatusTv;
+    private Button authBtn;
+
+    private Executor executor;
+    private BiometricPrompt biometricPrompt;
+    private BiometricPrompt.PromptInfo promptInfo;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        //init UI views
+        authStatusTv = findViewById(R.id.login_indication);
+        authBtn = findViewById(R.id.button_login);
+
+        //init bio metric
+
+        executor = ContextCompat.getMainExecutor(this);
+        biometricPrompt = new BiometricPrompt(MainActivity.this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                //error authenticating, stop tasks that requires auth
+                authStatusTv.setText("Authentication error: " + errString);
+                Toast.makeText(MainActivity.this, "Authentication error: " + errString, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                //authentication succeed, continue tasts that requires auth
+                authStatusTv.setText("Authentication succeed...!");
+                Toast.makeText(MainActivity.this, "Authentication succeed...!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(getApplicationContext(), accounts.class);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+                //failed authenticating, stop tasks that requires auth
+                authStatusTv.setText("Authentication failed...!");
+                Toast.makeText(MainActivity.this, "Authentication failed...!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        //setup title,description on auth dialog
+        promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Biometric Authentication")
+                .setSubtitle("Login using fingerprint authentication")
+                .setNegativeButtonText("User App Password")
+                .build();
+
+        //handle authBtn click, start authentication
+        authBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //show auth dialog
+                biometricPrompt.authenticate(promptInfo);
+
+
+                //I don't have a android with a fingerprint sensor so i can't really check if it work well, but it should
+                // To test the rest of the code I used the codes below to have a direct access to the application when testing
+
+                //Intent intent = new Intent(getApplicationContext(), accounts.class);
+                //startActivity(intent);
+            }
+        });
+    }
+}
